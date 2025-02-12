@@ -1,0 +1,25 @@
+.wp-block-tripolt-25-combo-03 {
+    padding: 20px;
+    border: 1px solid #ddd;
+    background-color: #f9f9f9;
+}
+
+.tripolt-25-combo-03 {
+    display: flex;
+    flex-direction: column;
+}
+
+.tripolt-25-combo-03 img {
+    max-width: 380px;
+}
+
+.tripolt-25-combo-03-images {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+}
+
+.tripolt-25-combo-03-image img {
+    max-width: 100px;
+    height: auto;
+}

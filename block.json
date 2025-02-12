@@ -1,0 +1,30 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 2,
+    "name": "tripolt-25/combo-03",
+    "title": "3er Combo",
+    "category": "widgets",
+    "icon": "images-alt2",
+    "description": "A custom block with a textarea and sortable images.",
+    "attributes": {
+        "content": {
+            "type": "string",
+            "source": "html",
+            "selector": "p"
+        },
+        "images": {
+            "type": "array",
+            "default": [],
+            "items": {
+                "type": "object",
+                "properties": {
+                    "id": { "type": "number" },
+                    "url": { "type": "string" },
+                    "alt": { "type": "string" }
+                }
+            }
+        }
+    },
+    "editorScript": "file:./index.js",
+    "editorStyle": "file:./editor.css"
+}
