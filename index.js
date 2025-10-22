@@ -1,108 +1,168 @@
-(function (blocks, editor, components, i18n, element) {
-    var el = element.createElement;
-    var RichText = editor.RichText;
-    var MediaUpload = editor.MediaUpload;
-    var InspectorControls = editor.InspectorControls;
-    var PanelBody = components.PanelBody;
-    var Button = components.Button;
+/**
+ * 3er Combo Block
+ * Block API Version 3 - Modern WordPress Gutenberg Block
+ */
+(function () {
+    const { registerBlockType } = wp.blocks;
+    const { RichText, MediaUpload, InspectorControls, useBlockProps } = wp.blockEditor;
+    const { PanelBody, Button } = wp.components;
+    const { __ } = wp.i18n;
+    const { createElement: el } = wp.element;
 
-    blocks.registerBlockType('tripolt-25/combo-03', {
-        title: i18n.__('3er Combo', 'tripolt_25'),
-        icon: 'images-alt2',
-        category: 'widgets',
-        attributes: {
-            content: {
-                type: 'string',
-                source: 'html',
-                selector: 'p'
-            },
-            images: {
-                type: 'array',
-                default: [],
-                items: {
-                    type: 'object',
-                    properties: {
-                        id: { type: 'number' },
-                        url: { type: 'string' },
-                        alt: { type: 'string' }
-                    }
-                }
-            }
-        },
+    registerBlockType('tripolt-25/combo-03', {
         edit: function (props) {
-            var attributes = props.attributes;
+            const { attributes, setAttributes } = props;
+            const { content, images } = attributes;
+
+            // Required for Block API v3 - provides iframe compatibility
+            const blockProps = useBlockProps();
 
             function onChangeContent(newContent) {
-                props.setAttributes({ content: newContent });
+                setAttributes({ content: newContent });
             }
 
             function onSelectImages(newImages) {
-                var updatedImages = newImages.map(function (image) {
-                    return {
-                        id: image.id,
-                        url: image.url,
-                        alt: image.alt
-                    };
-                });
+                const updatedImages = newImages.map(image => ({
+                    id: image.id,
+                    url: image.url,
+                    alt: image.alt || ''
+                }));
+
+                // Limit to maximum 3 images
                 if (updatedImages.length > 3) {
-                    updatedImages = updatedImages.slice(0, 3);
+                    setAttributes({ images: updatedImages.slice(0, 3) });
+                } else {
+                    setAttributes({ images: updatedImages });
                 }
-                props.setAttributes({ images: updatedImages });
             }
 
-            return [
+            function removeImage(indexToRemove) {
+                const updatedImages = images.filter((img, index) => index !== indexToRemove);
+                setAttributes({ images: updatedImages });
+            }
+
+            return el('div', {},
+                // Inspector Controls (Sidebar)
                 el(InspectorControls, { key: 'inspector' },
-                    el(PanelBody, { title: i18n.__('Images', 'tripolt_25') },
+                    el(PanelBody, {
+                        title: __('Image Settings', 'tripolt-25'),
+                        initialOpen: true
+                    },
+                        el('p', { style: { marginBottom: '10px' } },
+                            __('Select up to 3 images for your combo block.', 'tripolt-25')
+                        ),
                         el(MediaUpload, {
                             onSelect: onSelectImages,
                             allowedTypes: ['image'],
                             multiple: true,
                             gallery: true,
-                            value: attributes.images.map(function (img) { return img.id; }),
-                            render: function (obj) {
+                            value: images.map(img => img.id),
+                            render: function ({ open }) {
                                 return el(Button, {
-                                    onClick: obj.open,
-                                    isSecondary: true
-                                }, i18n.__('Select Images', 'tripolt_25'));
+                                    onClick: open,
+                                    variant: 'secondary',
+                                    icon: 'format-gallery'
+                                }, __('Select Images', 'tripolt-25'));
                             }
-                        })
+                        }),
+                        images.length > 0 && el('p', {
+                            style: { marginTop: '10px', fontSize: '12px', color: '#757575' }
+                        },
+                            __('Images selected: ', 'tripolt-25') + images.length + ' / 3'
+                        )
                     )
                 ),
-                el('div', { className: props.className },
+
+                // Block Content (Editor)
+                el('div', blockProps,
                     el(RichText, {
                         tagName: 'p',
                         onChange: onChangeContent,
-                        value: attributes.content,
-                        placeholder: i18n.__('Enter your content here...', 'tripolt_25')
+                        value: content,
+                        placeholder: __('Enter your content here...', 'tripolt-25'),
+                        className: 'combo-content'
                     }),
-                    el('div', { className: 'tripolt-25-combo-03-images' },
-                        attributes.images.map(function (image) {
-                            return el('img', { key: image.id, src: image.url, alt: image.alt });
-                        })
+
+                    // Images Display
+                    images.length > 0 && el('div', {
+                        className: 'tripolt-25-combo-03-images'
+                    },
+                        images.map((image, index) =>
+                            el('div', {
+                                key: image.id,
+                                className: 'tripolt-25-combo-03-image',
+                                style: { position: 'relative', marginBottom: '10px' }
+                            },
+                                el('img', {
+                                    src: image.url,
+                                    alt: image.alt
+                                }),
+                                el(Button, {
+                                    onClick: () => removeImage(index),
+                                    icon: 'no-alt',
+                                    label: __('Remove image', 'tripolt-25'),
+                                    style: {
+                                        position: 'absolute',
+                                        top: '5px',
+                                        right: '5px',
+                                        minWidth: '30px',
+                                        height: '30px'
+                                    },
+                                    isDestructive: true,
+                                    size: 'small'
+                                })
+                            )
+                        )
+                    ),
+
+                    // Empty State
+                    images.length === 0 && el('p', {
+                        className: 'combo-empty-state',
+                        style: {
+                            padding: '20px',
+                            textAlign: 'center',
+                            color: '#757575',
+                            border: '2px dashed #ddd',
+                            borderRadius: '4px',
+                            marginTop: '10px'
+                        }
+                    },
+                        __('No images selected. Use the sidebar to add images.', 'tripolt-25')
                     )
                 )
-            ];
+            );
         },
-        save: function (props) {
-            var attributes = props.attributes;
 
-            return el('div', { className: 'tripolt-25-combo-03' },
+        save: function (props) {
+            const { attributes } = props;
+            const { content, images } = attributes;
+
+            // Required for Block API v3 - preserves block wrapper attributes
+            const blockProps = useBlockProps.save();
+
+            return el('div', blockProps,
                 el(RichText.Content, {
                     tagName: 'p',
-                    value: attributes.content
+                    value: content,
+                    className: 'combo-content'
                 }),
-                el('div', { className: 'tripolt-25-combo-03-images' },
-                    attributes.images.map(function (image) {
-                        return el('img', { key: image.id, src: image.url, alt: image.alt });
-                    })
+
+                images.length > 0 && el('div', {
+                    className: 'tripolt-25-combo-03-images'
+                },
+                    images.map(image =>
+                        el('div', {
+                            key: image.id,
+                            className: 'tripolt-25-combo-03-image'
+                        },
+                            el('img', {
+                                src: image.url,
+                                alt: image.alt
+                            })
+                        )
+                    )
                 )
             );
         }
     });
-})(
-    window.wp.blocks,
-    window.wp.blockEditor || window.wp.editor,
-    window.wp.components,
-    window.wp.i18n,
-    window.wp.element
-);
+})();
